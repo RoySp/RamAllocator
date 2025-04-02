@@ -10,10 +10,34 @@ void clearInputStream() {
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // discard invalid input
 }
 
+class RamAllocator {
+public:
+    void allocateMemory(size_t mb) {
+        size_t bytes = mb * 1048576;
+        buffer = std::make_unique<char[]>(bytes);
+        if (!buffer) {
+            throw std::runtime_error("Memory allocation failed.");
+        }
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis('a', 'z');
+        for (size_t i = 0; i < bytes; ++i) {
+            buffer[i] = static_cast<char>(dis(gen));
+        }
+    }
+
+    void displayMessage(size_t mb) {
+        std::cout << mb << " MB allocated and filled with random data.\n";
+    }
+
+private:
+    std::unique_ptr<char[]> buffer;
+};
+
 int main() {
     std::cout << "RAM Allocator\n";
 
-    // Prompt user for the amount of MB to allocate
     int mb = 0;
     std::cout << "How much MB do you want to allocate? ";
     while (!(std::cin >> mb) || mb <= 0) {
@@ -21,27 +45,15 @@ int main() {
         std::cout << "Invalid number. Please enter a positive integer: ";
     }
 
-    // Calculate the number of bytes to allocate
-    size_t bytes = static_cast<size_t>(mb) * 1048576;
-
-    // Allocate memory using unique_ptr for automatic deallocation
-    auto buffer = std::make_unique<char[]>(bytes);
-    if (!buffer) {
-        std::cerr << "Memory allocation failed.\n";
+    try {
+        RamAllocator allocator;
+        allocator.allocateMemory(mb);
+        allocator.displayMessage(mb);
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
         return 1;
     }
 
-    // Fill the allocated memory with random lowercase letters
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis('a', 'z');
-    for (size_t i = 0; i < bytes; ++i) {
-        buffer[i] = static_cast<char>(dis(gen));
-    }
-
-    std::cout << mb << " MB allocated and filled with random data.\n";
-
-    // Wait for user input before closing
     std::cout << "Press Enter to close the RAM Allocator...";
     clearInputStream();
     std::cin.get(); // wait for the Enter key
