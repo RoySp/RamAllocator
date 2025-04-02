@@ -1,45 +1,46 @@
 #include "RamAllocator.h"
 #include <iostream>
-#include <cstdlib>
-#include <cstring>
+#include <memory>
+#include <random>
+#include <string>
 
-int main()
-{
-    SetConsoleTitle(_T("RAM Allocater"));
+int main() {
+    std::cout << "RAM Allocator\n";
 
-    int i = 0, n = 0, mb = 0;
-    char* buffer = nullptr;
-    char buf[BUFSIZ];
-
+    // Prompt user for the amount of MB to allocate
+    int mb = 0;
     std::cout << "How much MB do you want to allocate? ";
-
-    while (fgets(buf, sizeof buf, stdin) == NULL || sscanf_s(buf, "%d", &i) != 1)
-    {
-        std::cout << "Invalid number. Please try again.\nHow much MB do you want to allocate? ";
-        fflush(stdout);
+    while (!(std::cin >> mb) || mb <= 0) {
+        std::cin.clear(); // clear the error flag
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // discard invalid input
+        std::cout << "Invalid number. Please enter a positive integer: ";
     }
 
-    mb = 1048576 * i;
+    // Calculate the number of bytes to allocate
+    size_t bytes = static_cast<size_t>(mb) * 1048576;
 
-    buffer = static_cast<char*>(malloc(mb + 1));
-    if (buffer == NULL) 
-    {
+    // Allocate memory using unique_ptr for automatic deallocation
+    std::unique_ptr<char[]> buffer(new (std::nothrow) char[bytes + 1]);
+    if (!buffer) {
         std::cerr << "Memory allocation failed.\n";
         return 1;
     }
 
-    for (n = 0; n < mb; n++)
-    {
-        buffer[n] = rand() % 26 + 'a';
+    // Fill the allocated memory with random lowercase letters
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis('a', 'z');
+    for (size_t i = 0; i < bytes; ++i) {
+        buffer[i] = static_cast<char>(dis(gen));
     }
-    buffer[mb] = '\0';
+    buffer[bytes] = '\0'; // Null-terminate the buffer
 
-    std::cout << i << "MB allocated!\n";
+    std::cout << mb << " MB allocated and filled with random data.\n";
 
-    std::cout << "Press any key to close the Ram Allocator...";
-    _getch();
-
-    free(buffer);
+    // Wait for user input before closing
+    std::cout << "Press Enter to close the RAM Allocator...";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // clear the newline left in the buffer
+    std::cin.get(); // wait for the Enter key
 
     return 0;
 }
